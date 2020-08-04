@@ -1,0 +1,94 @@
+Opening Trainer User Manual
+Joshua Blinkhorn August 2020
+
+Opening Trainer is a command line program that trains your opening repertoire with spaced repetition and active recall learning.
+Positions from your repertoire are scheduled for recall at the optimal time to minimise the effort needed to memorise them.
+The emphasis is on position-based learning, rather than the traditional line-based learning.
+
+OPENING THE TRAINER
+
+Open a terminal and type
+
+     python3 trainer.py
+
+The main menu lists your repertoires and their statistics:
+
+ID: 	 each repertoire has an ID (starting from 1). IDs progress in alphabetical order by repertoire name.
+COV.: 	 the percentage of the repertoire that you have learned to date
+WAITING: the number of positions ready (for learning or recal) right now
+LEARNED: the number of learnded positions
+UNSEEN:  the number of positions neither learned nor currently ready for learning
+TOTAL:	 the total number of positions in the repertoire
+
+Only positions which require a solution are counted -- that is, position in which you are to move, and the unique correct move is specified in your repertoire.
+
+Trainer ships with a default repertoire in the Traxler gambit (1. e4 e5 2. Nf3 Nc6 3. Bc4 Nf6 4. Ng5 Bc5?!) to get you started.
+Of course, you will want to build your own custom repertoires.
+The Traxler is included in case you wish to grips with the program right away.
+
+ENTERING MOVES
+
+Opening Trainer has no GUI yet, so moves must be entered as text in UCI notation (this is required during repertoire management, but not during training).
+UCI notation is a very simple convention that names the home and target square of the moved piece -- for example, `1. Nf3' is written `g1f3'.
+Every move is represented similarly as a four character string with the exception of pawn promotion, which appends the promoted piece ('N', 'B', 'R' or 'Q') as the fifth and final character, for example 'g7g8Q'.
+
+CREATING A NEW REPERTOIRE
+
+In the main menu, type 'n' and hit enter.
+You will be prompted to navigate to the starting position of your repertoire.
+Enter moves in UCI notation until the desired position is reached, and then hit enter.
+To retract a move, type `b' and hit enter.
+
+When you have selected the starting position, you will be prompted to choose white/black and name for your repertoire.
+Then you are returned to the main menu, where you will see your new repertoire in the list.
+The new repertoire has zero stats, because it is empty - it consists only of a starting position.
+Content (moves, lines) is added to a repertoire via the management menu.
+
+MANAGING A REPERTOIRE
+
+Repertoire management is where the details of repertoire can be edited.
+You will build a tree of moves that specify all of your opponents moves that you want to consider (termed `problems'), together with your chosen responses (termed `solutions').
+
+To go to repertoire management, first go to the repertoire overview by typing its ID in the main menu and hitting enter.
+Then type 'm' and hit enter again.
+Follow the on screen instructions to enter moves into the tree.
+
+Usually you will specify exactly one solution to each problem.
+However, you can specify more than one solution, in which case the `main solution' (i.e. the one listed first underneath the position diagram) will be the move included in your repertoire.
+Other solutions can be promoted to the main solution by typing 'p' and hitting enter, followed by specifying the move to be promoted.
+This allows you to work on various solutions simultaneously, without deleting your work every time you switch.
+
+TRAINING A REPERTOIRE
+
+To go to repertoire training, first select the repertoire from the main menu by typing its ID and hitting enter.
+Then type 'm' and hit enter again.
+The trainer will cycle through all the scheduled problems and close when complete, returning to the repertoire overview.
+
+Repertoire training is a scheduled process of solution learning and recall.
+Solution are first learned in a three step process, then they are scheduled for recall at a later date.
+Scheduling intervals are determined based on how well you know a position.
+
+The learning process has three stages:
+
+1 - the position is new, you haven't seen it before and you are shown the solution.
+2 - you recall the position for the first time.
+3 - you recall the position for the second time.
+
+After completing that process, the position is deemed `learned' and it will be scheduled for recall, the first recall scheduled for the following day.
+
+After every recall, you can select three options: `easy', `ok' or `hard'.
+Selecting `ok' gives rise to the default behaviour, and should be chosed if you managed to recall the move within a reasonable amout of time (say up to 15 seconds.)
+Selecting `easy' will cause the position to scheduled at longer intervals. This should be chosen if the solution is obvious to you, for example a forced move.
+Selecting `hard' will cause the position to be scheduled sooner; learned solution deemed 'hard' must be relearned.
+(Future versions may enable further customisation of learning behaviour for `hard' solutions).
+
+TRANSPOSITIONS
+
+Sometimes your repertoire will lead you to the same position in more than one way - this is called `transposition'.
+Transpositions with and between repertoires are not recognised automatically (this feature may be enabled in future versions).
+Hence, it is currently the user's responsibility to handle transpositions within repertoire management.
+If you duplicate positions, you will also duplicate your training.
+
+BUG FIXES
+
+If you find a bug, please report it to `joshuablinkhorn@hotmail.co.uk'. Thanks!
