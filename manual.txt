@@ -13,12 +13,12 @@ Open a terminal and type
 
 The main menu lists your repertoires and their statistics:
 
-ID: 	 each repertoire has an ID (starting from 1). IDs progress in alphabetical order by repertoire name.
-COV.: 	 the percentage of the repertoire that you have learned to date
-WAITING: the number of positions ready (for learning or recal) right now
-LEARNED: the number of learnded positions
-UNSEEN:  the number of positions neither learned nor currently ready for learning
-TOTAL:	 the total number of positions in the repertoire
+ID: 	      each repertoire has an ID (starting from 1). IDs progress in alphabetical order by repertoire name.
+COV.: 	      coverage, i.e. the percentage of the repertoire that you have learned to date
+WAITING:      the number of positions ready (for learning or recal) right now
+LEARNED:      the number of learnded positions
+INACTIVE:     the number of positions neither learned nor currently ready for learning
+TOTAL:	      the total number of positions in the repertoire
 
 Only positions which require a solution are counted -- that is, position in which you are to move, and the unique correct move is specified in your repertoire.
 

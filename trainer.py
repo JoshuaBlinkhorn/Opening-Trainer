@@ -212,10 +212,8 @@ def print_main_overview(filenames) :
     # print header
     header = "ID".ljust(3) + "COV.".ljust(5) + "NAME".ljust(name_width)
     header += "WAITING".ljust(9) + "LEARNED".ljust(9)
-    header += "UNSEEN".ljust(8) + "TOTAL".ljust(6)
+    header += "INACTIVE".ljust(8) + "TOTAL".ljust(6)
     print(header)
-
-    
     
     # print the stats for each repertoire
     for index, filename in enumerate(filenames) :
