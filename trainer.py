@@ -1,3 +1,7 @@
+# Opening Trainer (version 1.0)
+# Joshua Blinkhorn
+# c. July 2020
+
 import os
 import chess
 import chess.pgn
@@ -7,7 +11,32 @@ import pickle
 import datetime
 import time
 import shutil
-import rep
+
+# statuses (every triaing position is in one of these states)
+
+NEW = 0
+FIRST_STEP = 1
+SECOND_STEP = 2
+REVIEW = 3
+INACTIVE = 4
+
+# classes of data appended to repertoire tree nodes
+
+# TrainingData - data for a given training position
+class TrainingData :
+    def __init__(self) :
+        self.status = INACTIVE
+        self.last_date = datetime.date.today()
+        self.due_date = datetime.date.today()
+
+# MetaData - data for the whole repertoire        
+class  MetaData:
+    def __init__(self, name, player) :
+        self.name = name
+        self.player = player
+        self.learning_data = [datetime.date.today(),0]
+        self.learn_max = 10
+        self.status = EMPTY
 
 ########
 # misc #
@@ -16,6 +45,7 @@ import rep
 # path to data directory
 rep_path = "Repertoires"
 
+# checks whether a string represents an integer value
 def represents_int(string):
     try: 
         int(string)
@@ -24,7 +54,7 @@ def represents_int(string):
         return False
 
 # checks whether a string is a legal move in uci notation
-def is_valid_uci(string,board) :
+def is_valid_uci(string, board) :
     validity = False
     for move in board.legal_moves :
         if (string == move.uci()) :
@@ -38,7 +68,7 @@ def is_valid_uci(string,board) :
 
 # `clears' the screen
 def clear() :
-    for x in range(40) :
+    for x in range(100) :
         print("")
 
 # prints the side to move
@@ -61,8 +91,7 @@ def print_board(board,player) :
             for column in range(15) :
                 row_string += string[(7-row) * 16 + (14 - column)]
             print(row_string)            
-            
-        
+                    
 # prints repertoire moves for the given node
 def print_moves(node) :
     if (node.player_to_move) :
@@ -84,12 +113,15 @@ def print_moves(node) :
 # creating / saving / opening repertoires #
 ###########################################
 
+# returns the path to a repertoire file (relative to the root folder) give its name
 def rpt_path(name) :
     return rep_path + "/" + name + ".rpt"
 
+# returns the name of repertoire from its filename (relative to the Repertoires/ folder)
 def rpt_name(filename) :
     return filename[:-4]
 
+# permanently deletes a repertoire
 def delete_repertoire(filenames) :
     # TODO: the prompting should go in the calling function
     command = input("\nID to delete:")
@@ -100,12 +132,14 @@ def delete_repertoire(filenames) :
         if (check == "y") :
             os.remove(rep_path + "/" + filenames[index])
 
+# saves a repertoire (by pickling)            
 def save_repertoire (repertoire) :
     filename = rpt_path(repertoire.meta.name)
     update(repertoire)
     with open(filename, "wb") as file :
         pickle.dump(repertoire,file)
 
+# opens a repertoire (i.e. restores the Python objects by unpickling)        
 def open_repertoire (filename) :
     filepath = rep_path + "/" + filename
     with open(filepath, "rb") as file :
@@ -113,6 +147,7 @@ def open_repertoire (filename) :
     update(repertoire)
     return repertoire
 
+# updates a repertoire's scheduling data 
 def update(repertoire) :
     learning_date = repertoire.meta.learning_data[0]
     learning_value = repertoire.meta.learning_data[1]
@@ -147,7 +182,7 @@ def get_counts(node) :
             if (status == index) :
                 counts[index] += 1
         # due count
-        if (status == rep.REVIEW and due_date <= datetime.date.today()) :
+        if (status == REVIEW and due_date <= datetime.date.today()) :
             counts[5] += 1
         # increment reachable count
         counts[6] += 1
@@ -212,7 +247,7 @@ def print_main_overview(filenames) :
     # print header
     header = "ID".ljust(3) + "COV.".ljust(5) + "NAME".ljust(name_width)
     header += "WAITING".ljust(9) + "LEARNED".ljust(9)
-    header += "INACTIVE".ljust(8) + "TOTAL".ljust(6)
+    header += "TOTAL".ljust(6)
     print(header)
     
     # print the stats for each repertoire
@@ -224,7 +259,6 @@ def print_main_overview(filenames) :
             coverage = int(round(counts[3] / counts[6] * 100))
         waiting = counts[0] + counts[1] + counts[2] + counts[5]
         learned = counts[3]
-        unseen = counts[4]
         total = counts[6]
         info = str(id).ljust(3)
         if (counts[6] != 0) :
@@ -234,7 +268,6 @@ def print_main_overview(filenames) :
         info += str(repertoire.meta.name).ljust(name_width)
         info += str(waiting).ljust(9)
         info += str(learned).ljust(9)
-        info += str(unseen).ljust(8)
         info += str(total).ljust(7)
         print(info)
 
@@ -271,7 +304,7 @@ def new_repertoire() :
     # create the repertoire
     rpt = chess.pgn.Game()
     rpt.setup(board)
-    rpt.meta = rep.MetaData(name, player)
+    rpt.meta = MetaData(name, player)
     rpt.training = False
     rpt.player_to_move = player == board.turn
     save_repertoire(rpt)
@@ -360,7 +393,7 @@ def print_repertoire_options(repertoire,counts) :
 # manage menu #
 ###############
 
-# user management of repertoire as a pgn
+# the top level management dialogue
 def manage(filename):
     repertoire = open_repertoire(filename)
     player = repertoire.meta.player
@@ -390,24 +423,17 @@ def manage(filename):
             node = node.variation(move)
             board.push(move)
 
-    #threshold = compute_learning_threshold(repertoire)
-    #normalise(repertoire,)
     save_repertoire(repertoire)    
     clear()
     print(f"Saved {rpt_name(filename)}.")
 
-"""
-def compute_learning_threshold(repertoire) :
-    learning_date = 
-    learned_today = repertoire.meta.num_new_learned[1]
-    if (datetime.date.today() == repertoire.meta.num_new_learned[0]) :
-        learned_today = 
-"""
+# prints the overview for the given node    
 def print_node_overview(node,player,board) :
     print_turn(board)
     print_board(board,player)
     print_moves(node)
 
+# prints the management options for a given node
 def print_node_options(node) :
     print("")
     if (node.parent != None) :
@@ -419,6 +445,7 @@ def print_node_options(node) :
     print ("'c' close")
     print ("<move> enter move")
 
+# deletes a move in the repertoire move tree    
 def delete_move(node,board) :
     command = input("delete move:")
     if (is_valid_uci(command,board)) :
@@ -429,6 +456,7 @@ def delete_move(node,board) :
             if (command == "y") :
                 node.remove_variation(move)
 
+# promotes a move in the repertoire move tree
 def promote_move(node,board) :
     command = input("promote move:")
     if (is_valid_uci(command,board)) :
@@ -436,27 +464,28 @@ def promote_move(node,board) :
         if (node.has_variation(move)) :
             node.promote(move)
 
+# adds a move to the repertoire move tree
 def add_move(node,move) :
     new_node = node.add_variation(move)
     new_node.player_to_move = not node.player_to_move
     if (node.parent == None or new_node.player_to_move) :
         new_node.training = False        
     else :
-        new_node.training = rep.TrainingData()
+        new_node.training = TrainingData()
 
-# sets the card statuses based on the current environment
-        
+# sets training position statuses based on the current environment
+# for example, after management changes or the passage of time
 def normalise(node,threshold) :
     # configure training data
     if (node.training) :
         if (threshold <= 0) :
-            for status in [rep.NEW,rep.FIRST_STEP,rep.SECOND_STEP] :
+            for status in [NEW,FIRST_STEP,SECOND_STEP] :
                 if (node.training.status == status) :
-                    node.training.status = rep.INACTIVE
+                    node.training.status = INACTIVE
         else : # threshold exceeds 0
-            if (node.training.status == rep.INACTIVE) :
-                node.training.status = rep.NEW
-            for status in [rep.NEW,rep.FIRST_STEP,rep.SECOND_STEP] :
+            if (node.training.status == INACTIVE) :
+                node.training.status = NEW
+            for status in [NEW,FIRST_STEP,SECOND_STEP] :
                 if (node.training.status == status) :
                     threshold -= 1
 
@@ -473,6 +502,7 @@ def normalise(node,threshold) :
 # train menu #
 ##############
 
+# runs training routine for the given repertoire `filename'
 def train(filename):
     repertoire = open_repertoire(filename)
     player = repertoire.meta.player
@@ -481,8 +511,8 @@ def train(filename):
 
     # generate queue
     queue = generate_training_queue(repertoire,board)
-    # play queue
 
+    # play queue
     command = ""
     while(len(queue) != 0) :
         card = queue.pop(0)
@@ -497,6 +527,7 @@ def train(filename):
     # save and quit trainer
     save_repertoire(repertoire)
 
+# plays the given card to the user    
 def play_card(card,repertoire) :
     root = card[0]
     node = card[1]
@@ -546,7 +577,9 @@ def play_card(card,repertoire) :
             return "CLOSE"
         uci = input(":")
         
-        
+# handles the scheduling for the card based on user's performance
+# these are default settings - customisable parameters should be included
+# in the next version
 def handle_card_result(result,card,queue,repertoire) :
     root = card[0]
     node = card[1]
@@ -555,52 +588,52 @@ def handle_card_result(result,card,queue,repertoire) :
     today = datetime.date.today()
     tomorrow = today + datetime.timedelta(days=1)
     
-    if (status == rep.NEW) :
+    if (status == NEW) :
         print("Here")
-        node.training.status = rep.FIRST_STEP
+        node.training.status = FIRST_STEP
         increase = int(round(3 * random.random()))
         offset = min(1 + increase,len(queue))
         queue.insert(offset,card)
                     
-    elif (status == rep.FIRST_STEP) :
+    elif (status == FIRST_STEP) :
         if (result == "EASY") :
-            node.training.status = rep.REVIEW
+            node.training.status = REVIEW
             node.training.last_date = today
             node.training.due_date = tomorrow
             repertoire.meta.learning_data[1] += 1
         elif (result == "OK") :
-            node.training.status = rep.SECOND_STEP
+            node.training.status = SECOND_STEP
             increase = int(round(3 * random.random()))
             offset = min(6 + increase,len(queue))
             queue.insert(offset,card)
         elif (result == "HARD") :
-            node.training.status = rep.FIRST_STEP            
+            node.training.status = FIRST_STEP            
             increase = int(round(3 * random.random()))
             offset = min(1 + increase,len(queue))
             queue.insert(offset,card)
 
-    elif (status == rep.SECOND_STEP) :
+    elif (status == SECOND_STEP) :
         if (result == "EASY") :
-            node.training.status = rep.REVIEW
+            node.training.status = REVIEW
             node.training.last_date = today
             node.training.due_date = today + datetime.timedelta(days=3)
             repertoire.meta.learning_data[1] += 1
         elif (result == "OK") :
-            node.training.status = rep.REVIEW
+            node.training.status = REVIEW
             node.training.last_date = today
             node.training.due_date = tomorrow
             repertoire.meta.learning_data[1] += 1
         elif (result == "HARD") :
-            node.training.status = rep.FIRST_STEP            
+            node.training.status = FIRST_STEP            
             increase = int(round(3 * random.random()))
             offset = min(1 + increase,len(queue))
             queue.insert(offset,card)
             
-    elif (status == rep.REVIEW) :
+    elif (status == REVIEW) :
         previous_gap = (node.training.due_date - node.training.last_date).days
 
         if (result == "HARD") :
-            node.training.status = rep.FIRST_STEP
+            node.training.status = FIRST_STEP
             offset = min(2,len(queue))
             queue.insert(offset,card)
             repertoire.meta.learning_data[1] -= 1
@@ -611,10 +644,11 @@ def handle_card_result(result,card,queue,repertoire) :
             else :
                 multiplier = 2 + random.random()
             new_gap = int(round(previous_gap * multiplier))
-            node.training.status = rep.REVIEW
+            node.training.status = REVIEW
             node.training.last_date = today
             node.training.due_date = today + datetime.timedelta(days=new_gap)
 
+# builds the training queue from the repertoire tree
 def generate_training_queue(node,board) :
     # the board must be returned as it was given
     queue = []    
@@ -624,7 +658,7 @@ def generate_training_queue(node,board) :
         due_date = node.training.due_date
         today = datetime.date.today()
         if (status == 0 or status == 1 or status == 2 or (status == 3 and due_date <= today)) :
-                # add a card to the queue
+            # add a card to the queue
             solution = board.pop()
             problem = board.pop()
             game = chess.pgn.Game()
@@ -660,127 +694,3 @@ def generate_training_queue(node,board) :
 
 main_menu()
 
-
-# temp copied code
-
-"""        
-    node = game
-    board = node.board()
-    player = board.turn
-
-    result = query_node(node)
-    
-    while (result != "SAVE") :
-        if (result == "BACK") :
-            if (node != game) :
-                node = node.parent
-                
-        elif (result == "DELETE") :
-            uci = input("delete move:")
-            if (is_valid_uci(uci,node.board())) :
-                move = chess.Move.from_uci(uci)
-                if (node.has_variation(move)) :
-                    node.remove_variation(move)
-
-        elif (result == "PROMOTE") :
-            uci = input("promote move:")
-            if (is_valid_uci(uci,node.board())) :
-                move = chess.Move.from_uci(uci)
-                if (node.has_variation(move)) :
-                    node.promote_to_main(move)
-                           
-        elif (result != "INVALID") :
-            move = chess.Move.from_uci(result)
-            if (not node.has_variation(move)) :
-                node.add_main_variation(move)
-            node = node.variation(move)
-            board = node.board()                        
-
-        result = query_node(node)
-"""
-
-def folder_path(name) :
-    return data_path + name + "/"
-def pgn_path(name) :
-    return folder_path(name) + name + ".pgn"
-failure_string = " "
-
-data_path = "Repertoires/"
-
-##########
-# load() #
-##########
-
-# loads a saved repertoire
-# checks that the file exists and can be opened as a pgn by python-chess
-# return the path to the loaded repertoire file
-def load() :
-    clear()
-    file_path = input("filename:")
-    try:
-        pgn = open(file_path, "r")
-    except:
-        clear()
-        print("\nFile error.")
-        return
-    repertoire = chess.pgn.read_game(pgn)
-    pgn.close()
-    clear()
-    print("Loaded repertoire `" + str(file_path) + "'.")
-    return file_path
-
-
-# returns the parsed repertoire from its file path
-def get_pgn_game(repertoire) :
-    game = chess.pgn.read_game(repertoire.pgn)
-    return game
-
-def is_candidate(node,player) :
-    return (node.board().turn == player and node.parent != None)
-
-def is_response(node,player) :
-    return (node.board().turn != player and node.parent != None)
-
-# tells you whether a training node is the last training node in that line
-
-def is_leaf(training_node) :
-    if (training_node.is_end()) :
-        return True
-    for child in training_node.variations :
-        if (not child.is_end()) :
-            return False
-    return True
-
-# returns the set of responses at or deeper than the given node
-def get_responses(node,root) :
-    responses = []
-    if (is_response(node,root)) :
-        responses.append(node)
-    if (not node.is_end()) :
-        for child in node.variations :
-            responses += get_responses(child,root)
-    return responses
-
-# returns repertoire name from repertoire filepath (wrt rep_path)
-
-def get_full_counts(node) :
-    counts = [0,0,0,0,0]
-    if (node.training) :
-        status = node.training.status
-        if (status == rep.NEW) :
-            counts[0] += 1
-        elif (status == rep.FIRST_STEP) :
-            counts[1] += 1
-        elif (status == rep.SECOND_STEP) :
-            counts[2] += 1
-        elif (status == rep.REVIEW) :
-            counts[3] += 1
-        elif (status == rep.INACTIVE) :
-            counts[4] += 1
-
-    for child in node.variations :
-        child_counts = get_full_counts(child)
-        for index in range(5) :
-            counts[index] += child_counts[index]
-
-    return counts
